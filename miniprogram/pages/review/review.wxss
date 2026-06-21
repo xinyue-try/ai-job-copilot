@@ -1,0 +1,18 @@
+.review-text {
+  min-height: 360rpx;
+}
+
+.review-tip {
+  margin: 12rpx 0 20rpx;
+}
+
+.row-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.section-mini {
+  font-weight: 900;
+  margin-bottom: 14rpx;
+}

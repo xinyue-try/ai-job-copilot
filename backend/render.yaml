@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: ai-job-copilot
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: DEEPSEEK_MODEL
+        value: deepseek-chat
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: APP_ACCESS_TOKEN
+        sync: false

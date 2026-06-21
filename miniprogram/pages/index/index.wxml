@@ -1,0 +1,50 @@
+<view class="page">
+  <view class="brand">
+    <view>
+      <view class="kicker">AI Job Copilot</view>
+      <view class="page-title">先看岗位，再准备面试</view>
+      <view class="page-subtitle">投递前分析 JD，准备时问 AI，面试后沉淀 Job Memory。</view>
+    </view>
+  </view>
+
+  <view class="main-action card" bindtap="goJd">
+    <view>
+      <view class="action-title">分析 JD</view>
+      <view class="muted">上传截图或粘贴 JD，判断这个岗位值不值得投</view>
+    </view>
+    <view class="arrow">›</view>
+  </view>
+
+  <view class="split">
+    <view class="mini-action card" bindtap="goCoach">
+      <view class="mini-icon">?</view>
+      <view class="mini-title">问一问 AI</view>
+      <view class="mini-desc">突然不知道怎么答</view>
+    </view>
+    <view class="mini-action card" bindtap="goReview">
+      <view class="mini-icon">M</view>
+      <view class="mini-title">记录复盘</view>
+      <view class="mini-desc">沉淀面试经验</view>
+    </view>
+  </view>
+
+  <view class="section-title">最近动态</view>
+  <view class="card soft-card">
+    <view class="recent-line">
+      <text>最近分析</text>
+      <text class="pill">{{latestAnalysisText}}</text>
+    </view>
+    <view class="recent-line">
+      <text>最近复盘</text>
+      <text class="pill">{{latestMemoryText}}</text>
+    </view>
+  </view>
+
+  <view class="section-title">高频卡点摘要</view>
+  <view class="card">
+    <view class="tag">RAG 价值表达</view>
+    <view class="tag">项目指标</view>
+    <view class="tag">多 Agent 必要性</view>
+    <view class="tag">硬件 AI 经验</view>
+  </view>
+</view>

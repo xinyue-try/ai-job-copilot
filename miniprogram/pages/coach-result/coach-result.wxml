@@ -1,0 +1,54 @@
+<view class="page">
+  <view class="card question-card">
+    <view class="kicker">面试官提问</view>
+    <view>{{question}}</view>
+  </view>
+
+  <view class="card">
+    <view class="section-mini">30 秒短答</view>
+    <view class="muted">{{answer.short_answer || "暂无"}}</view>
+  </view>
+
+  <view class="card">
+    <view class="section-mini">完整答法</view>
+    <view class="muted">{{answer.full_answer || "暂无"}}</view>
+  </view>
+
+  <view class="card memory-card" wx:if="{{memories.length}}">
+    <view class="section-header">
+      <view class="section-mini">本次参考记忆</view>
+      <view class="section-hint">来自你的历史面试复盘</view>
+    </view>
+    <view class="memory-item" wx:for="{{memories}}" wx:key="id">
+      <view class="memory-title">{{item.title}}</view>
+      <view class="muted memory-meta">{{item.metaLine}}</view>
+      <view class="muted memory-summary">{{item.summary || "暂无摘要"}}</view>
+      <view class="memory-tags" wx:if="{{item.tags.length}}">
+        <text class="tag" wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">{{tag}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="section-mini">可引用证据</view>
+    <view class="list-item" wx:for="{{answer.evidence_to_use}}" wx:key="*this">• {{item}}</view>
+  </view>
+
+  <view class="card danger-card">
+    <view class="section-mini danger">不要这样说</view>
+    <view class="list-item" wx:for="{{answer.avoid_saying}}" wx:key="*this">× {{item}}</view>
+  </view>
+
+  <view class="card">
+    <view class="section-header">
+      <view class="section-mini">可能追问</view>
+      <view class="section-hint">点击追问，继续让 AI 帮你准备</view>
+    </view>
+    <view class="followup-item" wx:for="{{answer.possible_followups}}" wx:key="*this" bindtap="continueWithFollowup" data-question="{{item}}">
+      <view class="followup-text">{{index + 1}}. {{item}}</view>
+      <view class="followup-arrow">›</view>
+    </view>
+  </view>
+
+  <view class="secondary-btn" bindtap="copy">复制回答</view>
+</view>

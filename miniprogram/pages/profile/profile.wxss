@@ -1,0 +1,73 @@
+.section-mini {
+  font-weight: 900;
+  margin-bottom: 14rpx;
+}
+
+.status-card {
+  background: #fbf7f8;
+}
+
+.status-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18rpx;
+  margin-bottom: 18rpx;
+}
+
+.refresh-btn {
+  width: 128rpx;
+  height: 64rpx;
+  flex-shrink: 0;
+}
+
+.clear-btn {
+  margin-top: 18rpx;
+}
+
+.status-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+  border-top: 1rpx solid #ead7dd;
+  padding-top: 18rpx;
+  margin-top: 18rpx;
+}
+
+.status-dot {
+  width: 18rpx;
+  height: 18rpx;
+  border-radius: 50%;
+  background: #b42318;
+  margin-top: 10rpx;
+  flex-shrink: 0;
+}
+
+.status-dot.ok {
+  background: #0f7a55;
+}
+
+.status-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.status-label {
+  color: #241923;
+  font-weight: 800;
+  margin-bottom: 4rpx;
+}
+
+.status-tip {
+  border-top: 1rpx solid #ead7dd;
+  margin-top: 18rpx;
+  padding-top: 18rpx;
+}
+
+.resume-text {
+  min-height: 420rpx;
+}
+
+.save-btn {
+  margin-top: 20rpx;
+}

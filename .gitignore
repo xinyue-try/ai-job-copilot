@@ -1,0 +1,10 @@
+node_modules/
+.env
+*.log
+*.zip
+.DS_Store
+Thumbs.db
+cloudflared.exe
+project.private.config.json
+.tesseract-cache/
+

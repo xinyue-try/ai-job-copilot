@@ -1,0 +1,31 @@
+<view class="page">
+  <view class="page-title">分析 JD</view>
+  <view class="page-subtitle">上传截图或粘贴 JD，先判断这个岗位值不值得投。</view>
+
+  <view class="card resume-card">
+    <view>
+      <view class="muted">当前简历</view>
+      <view class="resume-name">{{resumeReady ? "已保存简历" : "未保存简历"}}</view>
+    </view>
+    <view class="secondary-btn small-btn" bindtap="goProfile">更换</view>
+  </view>
+
+  <view class="upload-card" bindtap="chooseImage">
+    <view class="upload-icon">+</view>
+    <view class="upload-title">上传岗位截图</view>
+    <view class="muted">支持 JPG、PNG，自动提取核心要求</view>
+  </view>
+
+  <view class="divider">或者</view>
+
+  <textarea class="textarea" value="{{jobText}}" bindinput="onJobInput" placeholder="在此粘贴岗位描述原文..." />
+
+  <view class="card soft-card recent" wx:if="{{latestTitle}}">
+    <text>最近分析：{{latestTitle}}</text>
+    <text>›</text>
+  </view>
+
+  <view class="sticky-bottom">
+    <view class="primary-btn" bindtap="analyze">开始分析</view>
+  </view>
+</view>

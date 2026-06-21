@@ -1,0 +1,30 @@
+.invite-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.invite-title {
+  font-size: 48rpx;
+  line-height: 1.15;
+  font-weight: 900;
+  margin-bottom: 16rpx;
+}
+
+.invite-subtitle {
+  color: #695f69;
+  line-height: 1.55;
+  margin-bottom: 32rpx;
+}
+
+.invite-card {
+  margin-bottom: 20rpx;
+}
+
+.invite-btn {
+  margin-top: 22rpx;
+}
+
+.invite-message {
+  margin-top: 18rpx;
+}

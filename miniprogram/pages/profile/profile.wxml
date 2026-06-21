@@ -1,0 +1,48 @@
+<view class="page">
+  <view class="page-title">我的</view>
+  <view class="page-subtitle">维护简历文本和后端连接状态。</view>
+
+  <view class="card">
+    <view class="section-mini">后端地址</view>
+    <view class="muted">{{apiBaseUrl}}</view>
+  </view>
+
+  <view class="card">
+    <view class="section-mini">访问状态</view>
+    <view class="muted">{{accessLine}}</view>
+    <view class="secondary-btn clear-btn" bindtap="clearInvite">清除邀请码</view>
+  </view>
+
+  <view class="card status-card">
+    <view class="status-head">
+      <view>
+        <view class="section-mini">系统状态</view>
+        <view class="muted">{{healthLine}}</view>
+      </view>
+      <view class="secondary-btn refresh-btn" bindtap="checkHealth">{{refreshText}}</view>
+    </view>
+
+    <view class="status-item" wx:for="{{statusItems}}" wx:key="key">
+      <view class="{{item.dotClass}}"></view>
+      <view class="status-content">
+        <view class="status-label">{{item.label}}</view>
+        <view class="muted">{{item.value}}</view>
+      </view>
+    </view>
+
+    <view class="status-tip">
+      <view class="muted">本地调试需要启动后端，并在微信开发者工具勾选“不校验合法域名”。上云后这里应显示 HTTPS 域名。</view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="section-mini">我的简历</view>
+    <textarea class="textarea resume-text" value="{{resumeText}}" bindinput="onResumeInput" placeholder="粘贴你的简历文本。第一版先用文本，后面再接 PDF/DOCX 上传。" />
+    <view class="primary-btn save-btn" bindtap="saveResume">保存简历</view>
+  </view>
+
+  <view class="card soft-card">
+    <view class="section-mini">当前版本</view>
+    <view class="muted">小程序前端 MVP · 本地联调版</view>
+  </view>
+</view>

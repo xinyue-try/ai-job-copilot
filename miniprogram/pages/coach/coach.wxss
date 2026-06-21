@@ -1,0 +1,3 @@
+.question-box {
+  min-height: 230rpx;
+}

@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "AI 求职 Copilot 捕获器",
+  "version": "0.1.0",
+  "description": "读取当前岗位页文本并发送到本地 AI 求职 Copilot。",
+  "permissions": ["activeTab", "scripting"],
+  "host_permissions": ["http://localhost:5177/*"],
+  "action": {
+    "default_title": "发送到 AI 求职 Copilot",
+    "default_popup": "popup.html"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/invite/invite",
+    "pages/jd-input/jd-input",
+    "pages/jd-result/jd-result",
+    "pages/coach/coach",
+    "pages/coach-result/coach-result",
+    "pages/review/review",
+    "pages/history/history",
+    "pages/profile/profile"
+  ],
+  "window": {
+    "navigationBarTitleText": "AI Job Copilot",
+    "navigationBarBackgroundColor": "#f7f3f5",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f7f3f5"
+  },
+  "tabBar": {
+    "color": "#6f6670",
+    "selectedColor": "#852344",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "工作台"
+      },
+      {
+        "pagePath": "pages/history/history",
+        "text": "历史"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的"
+      }
+    ]
+  },
+  "style": "v2"
+}

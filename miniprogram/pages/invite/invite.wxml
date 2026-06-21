@@ -1,0 +1,16 @@
+<view class="page invite-page">
+  <view class="invite-title">AI Job Copilot</view>
+  <view class="invite-subtitle">这是你的私人求职 Copilot。输入邀请码后，才能使用云端 AI 和 Job Memory。</view>
+
+  <view class="card invite-card">
+    <view class="section-mini">邀请码</view>
+    <input class="input" value="{{inviteCode}}" bindinput="onCodeInput" password placeholder="输入你的访问邀请码" />
+    <view class="primary-btn invite-btn" bindtap="verifyCode">{{buttonText}}</view>
+    <view class="muted invite-message">{{message}}</view>
+  </view>
+
+  <view class="card soft-card">
+    <view class="section-mini">当前后端</view>
+    <view class="muted">腾讯云内测环境 · 邀请码保护</view>
+  </view>
+</view>

@@ -1,0 +1,48 @@
+<view class="page">
+  <view class="page-title">历史</view>
+  <view class="page-subtitle">查看已经沉淀的 Job Memory。</view>
+
+  <view class="card history-card" wx:for="{{cards}}" wx:key="id" bindtap="toggleCard" data-id="{{item.id}}">
+    <view class="history-head">
+      <view class="history-main">
+        <view class="history-title">{{item.title}}</view>
+        <view class="muted">{{item.metaLine}}</view>
+      </view>
+      <view class="history-actions">
+        <view class="delete-btn" catchtap="deleteCard" data-id="{{item.id}}">删除</view>
+        <view class="{{item.arrowClass}}">›</view>
+      </view>
+    </view>
+    <view class="muted summary">{{item.summary}}</view>
+    <view>
+      <text class="tag" wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">{{tag}}</text>
+    </view>
+
+    <view class="history-detail" wx:if="{{item.expanded}}">
+      <view class="detail-section" wx:if="{{item.questions.length}}">
+        <view class="detail-title">面试问题与下次策略</view>
+        <view class="question-card" wx:for="{{item.questions}}" wx:for-item="question" wx:key="id">
+          <view class="question-title">
+            <text>{{question.numberText}}</text>
+            <text>{{question.questionText}}</text>
+          </view>
+          <view class="muted detail-line" wx:if="{{question.intentText}}">{{question.intentText}}</view>
+          <view class="muted detail-line danger-text" wx:if="{{question.weaknessText}}">{{question.weaknessText}}</view>
+          <view class="muted detail-line" wx:if="{{question.strategyText}}">{{question.strategyText}}</view>
+          <view class="muted detail-line" wx:if="{{question.evidenceText}}">{{question.evidenceText}}</view>
+        </view>
+      </view>
+
+      <view class="detail-section" wx:if="{{item.evidence.length}}">
+        <view class="detail-title">可复用证据</view>
+        <view class="evidence-item" wx:for="{{item.evidence}}" wx:for-item="evidence" wx:key="id">• {{evidence.text}}</view>
+      </view>
+
+      <view class="muted empty-detail" wx:if="{{item.noDetailText}}">{{item.noDetailText}}</view>
+    </view>
+  </view>
+
+  <view class="empty-state" wx:if="{{!cards.length}}">
+    暂无云端记忆
+  </view>
+</view>

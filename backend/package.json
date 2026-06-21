@@ -1,0 +1,17 @@
+{
+  "name": "ai-job-copilot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "echo \"No build step required\"",
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "pdfjs-dist": "^3.11.174",
+    "tesseract.js": "^7.0.0"
+  }
+}

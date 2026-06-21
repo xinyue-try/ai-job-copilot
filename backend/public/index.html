@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Job Copilot</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Personal AI Job Copilot</p>
+        <h1>先判断岗位，再沉淀面试记忆</h1>
+        <p class="subhead">投递前看 JD 是否值得投；准备时问 AI 怎么答；面试后把复盘沉淀进你的私有 Job Memory。</p>
+      </div>
+      <div class="api-pill" id="apiStatus">检测中</div>
+    </header>
+
+    <section class="hero-panel">
+      <div class="hero-copy">
+        <span>主流程</span>
+        <strong>岗位预判 → 面试准备 → 复盘沉淀</strong>
+      </div>
+      <div class="quick-actions">
+        <a href="#jobAnalyze">分析 JD</a>
+        <a href="#askCoach">问一问</a>
+        <a href="#jobMemory">写复盘</a>
+      </div>
+    </section>
+
+    <section class="panel access-panel" id="accessPanel" hidden>
+      <h2>访问密码</h2>
+      <div class="inline-form">
+        <input id="accessTokenInput" type="password" placeholder="云端部署时填写访问密码">
+        <button class="secondary-button" id="saveAccessTokenBtn" type="button">保存</button>
+      </div>
+    </section>
+
+    <section class="insight-strip">
+      <article>
+        <span>投递前</span>
+        <strong>JD 匹配打分</strong>
+      </article>
+      <article>
+        <span>准备中</span>
+        <strong>AI 回答教练</strong>
+      </article>
+      <article>
+        <span>面试后</span>
+        <strong>复盘进入记忆库</strong>
+      </article>
+    </section>
+
+    <section class="panel compact-panel" id="jobAnalyze">
+      <div class="panel-head">
+        <div>
+          <p class="section-kicker">Step 1 · JD Match</p>
+          <h2>看这个岗位值不值得投</h2>
+        </div>
+      </div>
+      <label class="big-upload">
+        <input id="jobImageInput" type="file" accept="image/*">
+        <strong>上传 BOSS 岗位截图</strong>
+        <span>也可以直接粘贴 JD 文本后分析</span>
+      </label>
+      <textarea id="jobText" placeholder="粘贴 JD，或上传截图后由 OCR 自动识别。"></textarea>
+    </section>
+
+    <section class="panel compact-panel">
+      <div class="panel-head">
+        <div>
+          <p class="section-kicker">Resume</p>
+          <h2>我的简历</h2>
+        </div>
+        <button class="ghost-button" id="saveResumeBtn" type="button">保存简历</button>
+      </div>
+      <label class="file-button">
+        <input id="resumeInput" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+        上传 PDF/DOCX 简历
+      </label>
+      <textarea id="resumeText" placeholder="上传简历后会自动解析，也可以直接粘贴简历文本。"></textarea>
+    </section>
+
+    <section class="action-bar sticky-action">
+      <button class="primary-button" id="analyzeBtn" type="button">开始 AI 预判</button>
+      <button class="secondary-button" id="clearBtn" type="button">清空岗位</button>
+      <p id="message"></p>
+    </section>
+
+    <section class="result-layout">
+      <article class="score-card">
+        <span>匹配分</span>
+        <strong id="totalScore">--</strong>
+        <em id="recommendedAction">等待分析</em>
+      </article>
+      <article class="panel summary-panel">
+        <h2>岗位判断</h2>
+        <div id="jobSummary" class="empty">暂无分析结果</div>
+      </article>
+    </section>
+
+    <section class="panel">
+      <h2>可解释打分</h2>
+      <div id="scoreBreakdown" class="score-breakdown empty">暂无</div>
+    </section>
+
+    <section class="panel highlight-panel">
+      <h2>面试雷达</h2>
+      <div id="interviewRadar" class="radar-list empty">暂无</div>
+    </section>
+
+    <section class="panel">
+      <h2>缺失能力</h2>
+      <div id="missingSkills" class="list empty">暂无</div>
+    </section>
+
+    <section class="panel">
+      <h2>简历优化建议</h2>
+      <div id="resumeTips" class="list empty">暂无</div>
+    </section>
+
+    <section class="panel">
+      <h2>打招呼语</h2>
+      <div id="greetings" class="greeting-grid empty">暂无</div>
+    </section>
+
+    <section class="panel ask-panel" id="askCoach">
+      <div class="panel-head">
+        <div>
+          <p class="section-kicker">Step 2 · Ask Coach</p>
+          <h2>突然不知道怎么答，问一问 AI</h2>
+        </div>
+      </div>
+      <div class="ask-grid">
+        <select id="coachRound">
+          <option value="">轮次</option>
+          <option>一面</option>
+          <option>二面</option>
+          <option>HR面</option>
+          <option>其他</option>
+        </select>
+        <select id="coachStyle">
+          <option value="稳妥口语化">稳妥口语化</option>
+          <option value="产品感强">产品感强</option>
+          <option value="数据感强">数据感强</option>
+          <option value="真诚自然">真诚自然</option>
+        </select>
+        <select id="coachTimeLimit">
+          <option value="30秒">30 秒</option>
+          <option value="1分钟">1 分钟</option>
+          <option value="2分钟">2 分钟</option>
+        </select>
+      </div>
+      <textarea id="coachQuestion" placeholder="输入你想问的问题，例如：如果面试官问 RAG 和普通 Prompt 的区别，我怎么结合这个项目回答？"></textarea>
+      <div class="action-bar">
+        <button class="primary-button" id="askCoachBtn" type="button">生成回答思路</button>
+      </div>
+      <div id="coachResult" class="memory-result empty">暂无回答建议</div>
+    </section>
+
+    <section class="panel job-memory-panel" id="jobMemory">
+      <div class="panel-head">
+        <div>
+          <p class="section-kicker">Step 3 · Job Memory</p>
+          <h2>面试结束后，记录一场复盘</h2>
+        </div>
+        <button class="ghost-button" id="refreshMemoryBtn" type="button">刷新</button>
+      </div>
+      <div class="memory-grid">
+        <input id="memoryCompany" type="text" placeholder="公司">
+        <input id="memoryRole" type="text" placeholder="岗位，例如 AI 产品实习生">
+        <select id="memoryRound">
+          <option value="">轮次</option>
+          <option>一面</option>
+          <option>二面</option>
+          <option>HR面</option>
+          <option>其他</option>
+          <option>未知</option>
+        </select>
+        <select id="memoryResult">
+          <option value="">结果</option>
+          <option>通过</option>
+          <option>未通过</option>
+          <option>待定</option>
+          <option>未知</option>
+        </select>
+      </div>
+      <textarea id="memoryRawText" placeholder="粘贴复盘文字，或直接粘贴原始面试实录/ASR 转写。系统会自动提取面试官问题、考察意图、你的回答卡点和下次策略。"></textarea>
+      <div class="action-bar">
+        <button class="primary-button" id="saveMemoryBtn" type="button">结构化并保存</button>
+        <button class="secondary-button" id="prepareInterviewBtn" type="button">基于记忆准备本轮面试</button>
+      </div>
+      <div id="memoryResultBox" class="memory-result empty">暂无记忆输出</div>
+      <div id="memoryCards" class="memory-list empty">暂无云端记忆</div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>岗位分析历史</h2>
+        <button class="ghost-button" id="exportBtn" type="button">导出 CSV</button>
+      </div>
+      <div class="stats-grid">
+        <div><span>分析数</span><strong id="statTotal">0</strong></div>
+        <div><span>平均分</span><strong id="statAvg">0</strong></div>
+        <div><span>建议投</span><strong id="statGood">0</strong></div>
+        <div><span>高风险题</span><strong id="statRisk">0</strong></div>
+      </div>
+      <div id="history" class="history-list empty">暂无分析历史</div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
