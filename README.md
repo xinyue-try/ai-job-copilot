@@ -51,24 +51,21 @@ AI Job Copilot 是一个面向个人求职流程的 AI 面试 Copilot。它把 J
 - **历史记忆管理**：支持展开查看问题、卡点、下次策略、可复用证据，并删除重复记录。
 - **邀请码内测**：通过轻量邀请码控制访问，并支持不同试用者的数据隔离。
 
-## 截图位
+## 产品截图
 
-截图文件放在 `assets/screenshots/` 下。建议补齐下面 5 张：
+下面截图展示了从 JD 分析到 AI 回答、复盘沉淀和历史记忆管理的核心链路。
 
-| 截图 | 建议文件名 | 展示重点 |
+| 工作台 | JD 分析结果 |
 | --- | --- | --- |
-| 首页 / 工作台 | `01-home.png` | 产品入口和主要功能 |
-| JD 分析结果 | `02-jd-result.png` | 匹配分、风险点、高风险面试雷达 |
-| 问一问 AI 结果 | `03-coach-result.png` | 回答思路、证据、可能追问 |
-| 复盘生成 Job Memory | `04-review-memory.png` | 结构化复盘能力 |
-| 历史记忆展开 | `05-history-detail.png` | RAG 记忆可见、可管理 |
+| ![工作台](./assets/screenshots/01-home.png) | ![JD 分析结果](./assets/screenshots/02-jd-result.png) |
 
-截图补齐后，可以在这里放展示图：
+| 问一问 AI 结果 | 复盘生成 Job Memory |
+| --- | --- |
+| ![问一问 AI 结果](./assets/screenshots/03-coach-result.png) | ![复盘生成 Job Memory](./assets/screenshots/04-review-memory.png) |
 
-```markdown
-![JD 分析结果](./assets/screenshots/02-jd-result.png)
-![问一问 AI 结果](./assets/screenshots/03-coach-result.png)
-```
+| 历史记忆展开 |
+| --- |
+| ![历史记忆展开](./assets/screenshots/05-history-detail.png) |
 
 ## 技术架构
 
@@ -151,4 +148,3 @@ const API_BASE_URL = "https://your-domain.com";
 ## 面试介绍版本
 
 我做了一个面向个人求职流程的 AI Job Copilot。它不是单纯调用大模型接口，而是把 JD 分析、面试即时问答、面试复盘沉淀和 RAG 记忆检索串成闭环。投递前它会分析岗位匹配度和面试风险；面试前可以基于历史复盘生成准备方案；面试中遇到问题可以让 AI 结合 JD 和历史记忆生成回答思路；面试后复盘会被结构化成 Job Memory，并通过向量检索在下一次面试中复用。这个项目的重点是让 AI 基于用户的真实经历辅助表达，而不是编造经历。
-
