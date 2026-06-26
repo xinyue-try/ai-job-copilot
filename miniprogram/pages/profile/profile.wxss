@@ -3,6 +3,27 @@
   margin-bottom: 14rpx;
 }
 
+.env-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44rpx;
+  padding: 0 18rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 800;
+  margin-bottom: 12rpx;
+}
+
+.env-pill.ok {
+  color: #0f5f43;
+  background: #dff5eb;
+}
+
+.env-pill.warn {
+  color: #8a3d05;
+  background: #fff0d8;
+}
+
 .status-card {
   background: #fbf7f8;
 }
@@ -68,6 +89,17 @@
   min-height: 420rpx;
 }
 
+.input-meta {
+  color: #8f7f87;
+  font-size: 24rpx;
+  line-height: 1.5;
+  margin-top: 12rpx;
+}
+
 .save-btn {
   margin-top: 20rpx;
+}
+
+.memory-btn {
+  margin-top: 18rpx;
 }

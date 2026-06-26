@@ -1,9 +1,15 @@
 # AI Job Copilot 小程序前端
 
-这是 AI Job Copilot 的微信小程序前端 MVP，当前 API 默认指向本地后端：
+这是 AI Job Copilot 的微信小程序前端 MVP。当前真实开发项目的 API 地址在：
 
 ```js
-http://localhost:5177
+D:\ai-job-copilot-miniprogram\utils\api.js
+```
+
+体验版/正式版需要把 `API_BASE_URL` 配置为不带端口的 HTTPS 域名，例如：
+
+```js
+const API_BASE_URL = "https://api.your-domain.com";
 ```
 
 ## 打开方式
@@ -41,10 +47,22 @@ npm.cmd start
 - `pages/jd-result`：JD 分析结果
 - `pages/coach`：问一问 AI
 - `pages/coach-result`：回答思路
-- `pages/review`：面试复盘
-- `pages/history`：Job Memory 历史
+- `pages/review`：添加求职记忆（面试复盘、项目经历、回答素材、Mock 反馈、失败问题）
+- `pages/history`：求职记忆历史
 - `pages/profile`：我的/简历维护
 
-## 后续上线
+## 体验版上线
 
-部署云端后，把 `utils/api.js` 中的 `API_BASE_URL` 改成 HTTPS 后端域名。
+体验版要完整请求云端后端，需要完成：
+
+1. HTTPS 域名。
+2. Nginx 反向代理到 `127.0.0.1:5177`。
+3. 微信公众平台配置 `request 合法域名`。
+4. `utils/api.js` 中的 `API_BASE_URL` 改成 HTTPS 域名。
+5. 重新上传并设为体验版。
+
+详细步骤见：
+
+```text
+D:\ai-job-copilot-miniprogram\DEPLOYMENT_CHECKLIST.md
+```

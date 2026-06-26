@@ -3,7 +3,7 @@
     <view>
       <view class="kicker">AI Job Copilot</view>
       <view class="page-title">先看岗位，再准备面试</view>
-      <view class="page-subtitle">投递前分析 JD，准备时问 AI，面试后沉淀 Job Memory。</view>
+      <view class="page-subtitle">投递前分析 JD，准备时问 AI，把项目经历、回答素材和复盘沉淀成求职记忆。</view>
     </view>
   </view>
 
@@ -23,8 +23,8 @@
     </view>
     <view class="mini-action card" bindtap="goReview">
       <view class="mini-icon">M</view>
-      <view class="mini-title">记录复盘</view>
-      <view class="mini-desc">沉淀面试经验</view>
+      <view class="mini-title">添加记忆</view>
+      <view class="mini-desc">沉淀求职证据</view>
     </view>
   </view>
 
@@ -35,7 +35,7 @@
       <text class="pill">{{latestAnalysisText}}</text>
     </view>
     <view class="recent-line">
-      <text>最近复盘</text>
+      <text>最近记忆</text>
       <text class="pill">{{latestMemoryText}}</text>
     </view>
   </view>

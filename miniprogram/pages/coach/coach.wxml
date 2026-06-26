@@ -1,6 +1,6 @@
 <view class="page">
   <view class="page-title">问一问 AI</view>
-  <view class="page-subtitle">不知道怎么回答时，输入问题，AI 会结合 JD、简历和历史复盘生成回答思路。</view>
+  <view class="page-subtitle">不知道怎么回答时，输入问题，AI 会结合 JD、简历和求职记忆生成回答思路。</view>
 
   <textarea class="textarea question-box" maxlength="500" value="{{question}}" bindinput="onQuestionInput" placeholder="输入或粘贴你遇到的面试难题..." />
 

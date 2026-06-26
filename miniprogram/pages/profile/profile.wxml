@@ -4,7 +4,9 @@
 
   <view class="card">
     <view class="section-mini">后端地址</view>
+    <view class="{{apiEnvClass}}">{{apiEnvLabel}}</view>
     <view class="muted">{{apiBaseUrl}}</view>
+    <view class="input-meta">{{apiEnvTip}}</view>
   </view>
 
   <view class="card">
@@ -37,8 +39,11 @@
 
   <view class="card">
     <view class="section-mini">我的简历</view>
-    <textarea class="textarea resume-text" value="{{resumeText}}" bindinput="onResumeInput" placeholder="粘贴你的简历文本。第一版先用文本，后面再接 PDF/DOCX 上传。" />
+    <textarea class="textarea resume-text" maxlength="-1" value="{{resumeText}}" bindinput="onResumeInput" placeholder="粘贴你的简历文本。第一版先用文本，后面再接 PDF/DOCX 上传。" />
+    <view class="input-meta">已输入 {{resumeTextLength}} 字。长简历可以直接整段粘贴，保存后用于 JD 分析。</view>
     <view class="primary-btn save-btn" bindtap="saveResume">保存简历</view>
+    <view class="secondary-btn memory-btn" bindtap="importResumeMemory">{{resumeMemoryText}}</view>
+    <view class="input-meta">{{resumeMemoryLine}}</view>
   </view>
 
   <view class="card soft-card">

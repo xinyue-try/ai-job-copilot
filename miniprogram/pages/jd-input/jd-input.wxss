@@ -53,6 +53,76 @@
   margin: 20rpx 0;
 }
 
+.link-card {
+  margin-bottom: 20rpx;
+}
+
+.link-card .field-label {
+  margin-top: 0;
+}
+
+.link-btn {
+  margin-top: 18rpx;
+}
+
+.progress-card {
+  background: #fbf7f8;
+}
+
+.progress-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20rpx;
+  margin-bottom: 18rpx;
+}
+
+.progress-title {
+  color: #241923;
+  font-weight: 900;
+  margin-bottom: 6rpx;
+}
+
+.progress-number {
+  color: #852344;
+  font-size: 34rpx;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.progress-track {
+  height: 14rpx;
+  border-radius: 999rpx;
+  background: #ead7dd;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 999rpx;
+  background: #852344;
+  transition: width 0.2s ease;
+}
+
+.task-error {
+  color: #b42318;
+  font-size: 24rpx;
+  line-height: 1.5;
+  margin-top: 14rpx;
+}
+
+.retry-btn {
+  margin-top: 16rpx;
+}
+
+.input-meta {
+  color: #8f7f87;
+  font-size: 24rpx;
+  line-height: 1.5;
+  margin-top: 12rpx;
+  margin-bottom: 20rpx;
+}
+
 .recent {
   display: flex;
   justify-content: space-between;

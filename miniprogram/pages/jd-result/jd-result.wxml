@@ -34,15 +34,28 @@
   </view>
 
   <view class="card prepare-card">
-    <view class="section-mini">历史记忆准备</view>
-    <view class="muted">结合你的 Job Memory，生成这一轮面试的准备重点和 STAR 回答提醒。</view>
+    <view class="section-mini">求职记忆准备</view>
+    <view class="muted">结合你的求职记忆，生成这一轮面试的准备重点和 STAR 回答提醒。</view>
     <view class="primary-btn prepare-btn" bindtap="prepareWithMemory">{{prepareButtonText}}</view>
   </view>
 
   <view class="card" wx:if="{{preparation}}">
     <view class="section-header">
       <view class="section-mini">本轮准备方案</view>
-      <view class="section-hint">参考 {{memoryCount}} 条历史记忆</view>
+      <view class="section-hint">{{memoryStatusText}}</view>
+    </view>
+
+    <view class="prep-block">
+      <view class="prep-title">本次参考记忆</view>
+      <view wx:if="{{!preparation.memories.length}}" class="muted">先添加一条项目经历、回答素材或失败问题，后续准备会自动召回。</view>
+      <view class="memory-item" wx:for="{{preparation.memories}}" wx:key="id">
+        <view class="memory-title">{{item.title}}</view>
+        <view class="muted memory-meta">{{item.metaLine}}</view>
+        <view class="muted memory-summary">{{item.summary}}</view>
+        <view wx:if="{{item.tags.length}}">
+          <text class="tag" wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">{{tag}}</text>
+        </view>
+      </view>
     </view>
 
     <view class="prep-block">

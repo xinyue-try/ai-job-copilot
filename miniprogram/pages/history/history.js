@@ -1,5 +1,17 @@
 const { request } = require("../../utils/api");
 
+const memoryTypeLabels = {
+  interview_review: "面试复盘",
+  project_experience: "项目经历",
+  answer_material: "回答素材",
+  mock_feedback: "Mock 反馈",
+  failed_question: "失败问题"
+};
+
+function getMemoryTypeLabel(type) {
+  return memoryTypeLabels[type] || "求职记忆";
+}
+
 Page({
   data: {
     cards: []
@@ -27,11 +39,15 @@ Page({
           text: item
         };
       });
+      const metaLine = [card.company, card.role, card.round, card.result].filter(function(item) {
+        return item && item !== "未知";
+      }).join(" · ");
 
       return {
         id: card.id,
+        typeLabel: getMemoryTypeLabel(card.type),
         title: card.title || "未命名记忆",
-        metaLine: [card.company, card.role, card.round, card.result].filter(Boolean).join(" · ") || "历史记忆",
+        metaLine: metaLine || "可召回的求职记忆",
         summary: card.summary || "暂无摘要",
         tags: card.tags_json || [],
         questions: questions,
@@ -59,17 +75,10 @@ Page({
     const cards = this.data.cards.map(function(card) {
       const expanded = card.id === id ? !card.expanded : card.expanded;
       return {
+        ...card,
         id: card.id,
-        title: card.title,
-        metaLine: card.metaLine,
-        summary: card.summary,
-        tags: card.tags,
-        questions: card.questions,
-        evidence: card.evidence,
         expanded: expanded,
-        arrowClass: expanded ? "history-arrow open" : "history-arrow",
-        hasDetail: card.hasDetail,
-        noDetailText: card.noDetailText
+        arrowClass: expanded ? "history-arrow open" : "history-arrow"
       };
     });
     this.setData({ cards: cards });
@@ -79,7 +88,7 @@ Page({
     if (!id) return;
     wx.showModal({
       title: "删除记忆",
-      content: "确定删除这条 Job Memory 吗？删除后不会再参与后续 RAG 召回。",
+      content: "确定删除这条求职记忆吗？删除后不会再参与后续 RAG 召回。",
       confirmText: "删除",
       confirmColor: "#b42318",
       success: async (res) => {

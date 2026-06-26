@@ -16,9 +16,32 @@
     <view class="muted">支持 JPG、PNG，自动提取核心要求</view>
   </view>
 
+  <view class="card link-card">
+    <view class="field-label">岗位链接</view>
+    <input class="input" value="{{jobLink}}" bindinput="onLinkInput" placeholder="粘贴 BOSS / 实习僧岗位链接" />
+    <view class="secondary-btn link-btn" bindtap="parseLink">识别链接</view>
+    <view class="input-meta">链接识别可能受登录或反爬影响，失败时可复制 JD 文本或上传截图。</view>
+  </view>
+
+  <view class="card progress-card" wx:if="{{taskActive || taskError}}">
+    <view class="progress-head">
+      <view>
+        <view class="progress-title">{{taskTitle || "处理中"}}</view>
+        <view class="muted">{{taskStage}}</view>
+      </view>
+      <view class="progress-number">{{taskProgress}}%</view>
+    </view>
+    <view class="progress-track">
+      <view class="progress-fill" style="width: {{taskProgress}}%;"></view>
+    </view>
+    <view class="task-error" wx:if="{{taskError}}">{{taskError}}</view>
+    <view class="secondary-btn retry-btn" wx:if="{{taskCanRetry}}" bindtap="retryTask">重新尝试</view>
+  </view>
+
   <view class="divider">或者</view>
 
-  <textarea class="textarea" value="{{jobText}}" bindinput="onJobInput" placeholder="在此粘贴岗位描述原文..." />
+  <textarea class="textarea" maxlength="-1" value="{{jobText}}" bindinput="onJobInput" placeholder="在此粘贴岗位描述原文..." />
+  <view class="input-meta">已输入 {{jobTextLength}} 字。长 JD 可以直接整段粘贴。</view>
 
   <view class="card soft-card recent" wx:if="{{latestTitle}}">
     <text>最近分析：{{latestTitle}}</text>

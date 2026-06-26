@@ -1,5 +1,17 @@
 const { request } = require("../../utils/api");
 
+const memoryTypeLabels = {
+  interview_review: "面试复盘",
+  project_experience: "项目经历",
+  answer_material: "回答素材",
+  mock_feedback: "Mock 反馈",
+  failed_question: "失败问题"
+};
+
+function getMemoryTypeLabel(type) {
+  return memoryTypeLabels[type] || "求职记忆";
+}
+
 Page({
   data: {
     job: {},
@@ -12,7 +24,8 @@ Page({
     preparing: false,
     prepareButtonText: "用历史记忆准备本轮面试",
     preparation: null,
-    memoryCount: 0
+    memoryCount: 0,
+    memoryStatusText: "尚未召回求职记忆"
   },
   onLoad() {
     const analysis = wx.getStorageSync("latestAnalysisFull") || {};
@@ -60,6 +73,22 @@ Page({
       id: "plan-" + index,
       text: item
     }));
+    const memories = (payload.memories || []).slice(0, 4).map((item, index) => {
+      const similarity = Number(item.similarity || 0);
+      return {
+        id: item.id || "prep-memory-" + index,
+        title: item.title || "历史求职记忆",
+        metaLine: [
+          getMemoryTypeLabel(item.type),
+          item.company,
+          item.role,
+          item.round,
+          similarity ? "相似度 " + similarity.toFixed(2) : ""
+        ].filter(Boolean).join(" · "),
+        summary: item.summary || "暂无摘要",
+        tags: (item.tags_json || item.tags || []).slice(0, 4)
+      };
+    });
 
     return {
       roundFocus: preparation.round_focus || "暂无",
@@ -67,6 +96,7 @@ Page({
       risks,
       plan,
       pitch: preparation.one_minute_pitch || "暂无",
+      memories,
       starTips: [
         { id: "s", label: "S", text: "先交代项目/业务背景，别一上来堆技术名词" },
         { id: "t", label: "T", text: "说清当时目标、约束和你负责的部分" },
@@ -101,7 +131,8 @@ Page({
       });
       this.setData({
         preparation: this.buildPreparation(payload),
-        memoryCount: (payload.memories || []).length
+        memoryCount: (payload.memories || []).length,
+        memoryStatusText: (payload.memories || []).length ? "本次召回了 " + (payload.memories || []).length + " 条求职记忆" : "暂未召回历史记忆，本次准备主要基于当前 JD 和简历。"
       });
     } catch (error) {
       wx.showToast({ title: error.message, icon: "none" });

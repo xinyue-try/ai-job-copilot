@@ -14,11 +14,12 @@
     <view class="muted">{{answer.full_answer || "暂无"}}</view>
   </view>
 
-  <view class="card memory-card" wx:if="{{memories.length}}">
+  <view class="card memory-card">
     <view class="section-header">
       <view class="section-mini">本次参考记忆</view>
-      <view class="section-hint">来自你的历史面试复盘</view>
+      <view class="section-hint">{{memoryStatusText}}</view>
     </view>
+    <view wx:if="{{!memories.length}}" class="muted memory-summary">先添加一条项目经历、回答素材或失败问题，后续相似问题会自动召回。</view>
     <view class="memory-item" wx:for="{{memories}}" wx:key="id">
       <view class="memory-title">{{item.title}}</view>
       <view class="muted memory-meta">{{item.metaLine}}</view>

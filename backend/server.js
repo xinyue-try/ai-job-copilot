@@ -1,4 +1,5 @@
 import http from "node:http";
+import { randomUUID } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { extname, join, resolve } from "node:path";
 import { createRequire } from "node:module";
@@ -15,6 +16,8 @@ const bundledNodeModules =
 let latestPage = null;
 let ocrWorkerPromise = null;
 let ocrQueue = Promise.resolve();
+let activeOcrProgress = null;
+const jobs = new Map();
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -35,6 +38,75 @@ function sendJson(res, status, data) {
     "Access-Control-Allow-Headers": "Content-Type, X-App-Token",
   });
   res.end(JSON.stringify(data));
+}
+
+function createJob(type, userId, stage = "已创建任务") {
+  const now = new Date().toISOString();
+  const job = {
+    id: randomUUID(),
+    type,
+    status: "queued",
+    progress: 0,
+    stage,
+    createdAt: now,
+    updatedAt: now,
+    userId: userId || "default",
+    result: null,
+    error: "",
+  };
+  jobs.set(job.id, job);
+  cleanupJobs();
+  return job;
+}
+
+function updateJob(job, patch = {}) {
+  if (!job) return null;
+  Object.assign(job, patch, { updatedAt: new Date().toISOString() });
+  if (typeof job.progress === "number") {
+    job.progress = Math.max(0, Math.min(100, Math.round(job.progress)));
+  }
+  return job;
+}
+
+function serializeJob(job) {
+  return {
+    id: job.id,
+    type: job.type,
+    status: job.status,
+    progress: job.progress,
+    stage: job.stage,
+    createdAt: job.createdAt,
+    updatedAt: job.updatedAt,
+    result: job.result,
+    error: job.error,
+  };
+}
+
+function runJob(job, runner) {
+  updateJob(job, { status: "running", progress: Math.max(job.progress || 0, 5), stage: job.stage || "处理中" });
+  Promise.resolve()
+    .then(runner)
+    .then((result) => {
+      updateJob(job, { status: "succeeded", progress: 100, stage: "已完成", result, error: "" });
+    })
+    .catch((error) => {
+      updateJob(job, {
+        status: "failed",
+        progress: Math.max(job.progress || 0, 1),
+        stage: "处理失败",
+        error: error.message || "任务处理失败",
+      });
+    });
+}
+
+function cleanupJobs() {
+  const now = Date.now();
+  const maxAgeMs = 2 * 60 * 60 * 1000;
+  for (const [id, job] of jobs.entries()) {
+    if (now - new Date(job.createdAt).getTime() > maxAgeMs) {
+      jobs.delete(id);
+    }
+  }
 }
 
 function requireAppToken(req, res) {
@@ -227,10 +299,94 @@ async function parsePdfText(buffer) {
   return pages.join("\n\n").trim();
 }
 
-async function runOcr(buffer) {
+function htmlToReadableText(html) {
+  return xmlDecode(String(html || "")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|section|article|li|h1|h2|h3)>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\r/g, "\n")
+    .replace(/[ \t\f\v]+/g, " ")
+    .replace(/\n\s+/g, "\n")
+    .replace(/\n{3,}/g, "\n\n"))
+    .trim();
+}
+
+function extractHtmlTitle(html) {
+  const title = String(html || "").match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || "";
+  return htmlToReadableText(title).slice(0, 120);
+}
+
+async function extractJobFromUrl(rawUrl, onProgress) {
+  let url;
+  try {
+    url = new URL(String(rawUrl || "").trim());
+  } catch {
+    throw new Error("链接格式不正确，请粘贴完整的 http/https 岗位链接。");
+  }
+  if (!["http:", "https:"].includes(url.protocol)) {
+    throw new Error("只支持 http/https 岗位链接。");
+  }
+
+  onProgress?.(25, "正在请求岗位页面");
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), Number(process.env.LINK_FETCH_TIMEOUT_MS || 12000));
+  let response;
+  try {
+    response = await fetch(url.toString(), {
+      signal: controller.signal,
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.7",
+      },
+    });
+  } catch {
+    throw new Error("岗位链接访问失败，请复制 JD 文本或上传截图。");
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  if (!response.ok) {
+    throw new Error(`岗位链接访问失败（${response.status}），请复制 JD 文本或上传截图。`);
+  }
+  const contentType = response.headers.get("content-type") || "";
+  if (!/text\/html|application\/xhtml\+xml|text\/plain/i.test(contentType)) {
+    throw new Error("这个链接不像岗位详情页，请复制 JD 文本或上传截图。");
+  }
+
+  onProgress?.(55, "正在清洗页面内容");
+  const html = await response.text();
+  const title = extractHtmlTitle(html);
+  const text = htmlToReadableText(html)
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length >= 2)
+    .join("\n")
+    .slice(0, 30000);
+
+  if (/登录|验证码|安全验证|访问受限|请先登录|扫码登录|人机验证|captcha/i.test(text.slice(0, 3000))) {
+    throw new Error("这个岗位链接需要登录或验证，无法直接识别。请复制 JD 文本或上传截图。");
+  }
+  if (text.length < 120) {
+    throw new Error("没有从链接中识别到足够岗位内容，请复制 JD 文本或上传截图。");
+  }
+
+  onProgress?.(85, "已提取岗位正文");
+  return {
+    text,
+    title,
+    sourceUrl: url.toString(),
+  };
+}
+
+async function runOcr(buffer, onProgress) {
   const worker = await getOcrWorker();
   const timeoutMs = Number(process.env.OCR_TIMEOUT_MS || 60000);
   const recognize = async () => {
+    activeOcrProgress = typeof onProgress === "function" ? onProgress : null;
     const result = await worker.recognize(buffer);
     return result.data.text.trim();
   };
@@ -250,11 +406,13 @@ async function runOcr(buffer) {
       resetOcrWorker();
     }
     throw error;
+  } finally {
+    activeOcrProgress = null;
   }
 }
 
-function enqueueOcr(buffer) {
-  const task = ocrQueue.then(() => runOcr(buffer));
+function enqueueOcr(buffer, onProgress) {
+  const task = ocrQueue.then(() => runOcr(buffer, onProgress));
   ocrQueue = task.catch(() => {});
   return task;
 }
@@ -272,6 +430,9 @@ async function getOcrWorker() {
       gzip: !hasLocalLang,
       logger: (m) => {
         if (m?.status) console.log(`OCR ${m.status} ${Math.round((m.progress || 0) * 100)}%`);
+        if (activeOcrProgress && typeof m?.progress === "number") {
+          activeOcrProgress(m);
+        }
       },
       errorHandler: (e) => console.error("Tesseract warning:", e.message || e),
     }).then(async (worker) => {
@@ -450,6 +611,34 @@ function buildMemoryEmbeddingText(card) {
   ].filter(Boolean).join("\n");
 }
 
+const memoryTypeLabels = {
+  interview_review: "面试复盘",
+  project_experience: "项目经历",
+  answer_material: "回答素材",
+  mock_feedback: "Mock 反馈",
+  failed_question: "失败问题",
+};
+
+function normalizeMemoryType(type) {
+  return memoryTypeLabels[type] ? type : "interview_review";
+}
+
+function getMemoryTypeLabel(type) {
+  return memoryTypeLabels[normalizeMemoryType(type)];
+}
+
+function getMemoryTypeGuidance(type) {
+  const normalizedType = normalizeMemoryType(type);
+  const guidance = {
+    interview_review: "重点提取面试官问题、考察意图、候选人回答卡点、下次策略和可复用证据。",
+    project_experience: "重点提取项目背景、目标、用户/业务问题、候选人的动作、协作方式、结果数据、可复用项目证据和可能追问。",
+    answer_material: "重点提取可复用回答素材、适合回答的问题、支撑证据、表达亮点、需要避免的夸大说法。",
+    mock_feedback: "重点提取 Mock 中暴露的表达问题、能力短板、反馈建议、下次练习策略和可复用改进点。",
+    failed_question: "重点提取失败问题、当时回答、卡住原因、面试官可能考察点、下次更好的回答策略和可引用证据。",
+  };
+  return guidance[normalizedType];
+}
+
 async function createEmbedding(input) {
   const apiKey = process.env.EMBEDDING_API_KEY || process.env.OPENAI_API_KEY;
   if (!apiKey) {
@@ -499,21 +688,27 @@ async function createOptionalEmbedding(input) {
 async function structureInterviewReview(input) {
   const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey) {
-    const err = new Error("缺少 DEEPSEEK_API_KEY，无法结构化面试复盘。");
+    const err = new Error("缺少 DEEPSEEK_API_KEY，无法结构化求职记忆。");
     err.status = 401;
     throw err;
   }
 
   const model = process.env.DEEPSEEK_MODEL || "deepseek-chat";
+  const memoryType = normalizeMemoryType(input.type);
+  const memoryTypeLabel = getMemoryTypeLabel(memoryType);
   const rawText = String(input.rawText || "").slice(0, 60000);
-  const prompt = `你是一个 AI 产品求职复盘助手。用户可能粘贴的是已经整理好的复盘，也可能是很长的原始面试实录/ASR 转写稿。
+  const prompt = `你是一个求职记忆整理助手。用户可能粘贴的是面试复盘、项目经历、回答素材、Mock 反馈、失败问题，也可能是很长的原始实录/ASR 转写稿。
 
 请先在心里完成清洗和归纳：
-- 忽略开场寒暄、设备确认、口误、重复语气词和无意义断句。
-- 尽量区分“面试官问题”和“候选人回答”；如果说话人不明确，根据语义推断。
+- 忽略寒暄、设备确认、口误、重复语气词和无意义断句。
+- 如果是面试或 Mock 内容，尽量区分“提问方问题”和“候选人回答”；如果说话人不明确，根据语义推断。
 - 不要把整段实录直接塞进 summary，要提炼成可复用的求职记忆。
-- 对每个关键问题识别背后的考察意图、候选人的回答卡点，以及下次更好的回答策略。
-- 如果文本很长，优先保留高价值追问：项目深挖、岗位理解、AI/RAG/Agent、业务指标、稳定性、实习时长、转正、地域、硬件/线下经验。
+- 每条记忆都要服务后续 RAG 召回：以后用户问相似面试问题时，能被检索并复用。
+- 不要编造用户没写过的项目、数据、公司、结果；没有证据的内容只能写成“待补充”或“准备方向”。
+- 如果文本很长，优先保留高价值内容：项目深挖、岗位理解、AI/RAG/Agent、业务指标、稳定性、实习时长、转正、地域、硬件/线下经验。
+
+当前记忆类型：${memoryTypeLabel} (${memoryType})
+整理重点：${getMemoryTypeGuidance(memoryType)}
 
 请整理成可进入 RAG 知识库的 Memory Card。
 
@@ -521,7 +716,7 @@ async function structureInterviewReview(input) {
 
 JSON 字段：
 {
-  "type": "interview_review",
+  "type": "${memoryType}",
   "title": "",
   "company": "",
   "role": "",
@@ -542,22 +737,23 @@ JSON 字段：
 }
 
 要求：
+- type 必须保持为 "${memoryType}"。
 - 如果用户已提供公司、岗位、轮次、结果，优先使用用户提供的信息。
-- 如果文本没有明确轮次，可以根据问题类型推断，但不确定就填“未知”。
+- 如果文本没有明确公司、岗位、轮次、结果，不要硬编；公司/岗位可填空，轮次/结果可填“未知”。
 - tags 要适合后续检索，例如 RAG、Agent、AI产品、项目真实性、指标、数据分析、用户研究、业务理解、到岗时间。
-- weakness 要写出这次暴露的表达或能力卡点。
-- next_strategy 要能直接指导下次面试怎么答。
-- questions 保留 5-12 个最关键问题，不要把所有闲聊都列入。
-- summary 控制在 180 字以内，重点写“这轮主要考察什么、暴露什么风险、下次要补什么”。
-- reusable_evidence 只写候选人以后可以复用的项目证据或回答素材。
+- questions 用来存“以后可能被问到/已经被问到/需要准备的问题”，保留 3-12 个关键问题。
+- 每个 question 的 intent 写考察意图或材料价值；weakness 写暴露的表达/能力卡点，没有就写空字符串；next_strategy 写下次怎么答或怎么补；evidence_to_use 写可引用证据。
+- summary 控制在 180 字以内，重点写这条记忆以后能帮用户回答什么、有什么风险或可复用证据。
+- reusable_evidence 只写候选人以后可以复用的真实项目证据、经历证据或回答素材。
 
 用户填写信息：
+记忆类型：${memoryTypeLabel}
 公司：${input.company || ""}
 岗位：${input.role || ""}
 轮次：${input.round || ""}
 结果：${input.result || ""}
 
-原始复盘/面试实录：
+原始求职记忆内容：
 ${rawText}`;
 
   const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
@@ -576,16 +772,16 @@ ${rawText}`;
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const err = new Error(payload.error?.message || "DeepSeek 结构化复盘失败。");
+    const err = new Error(payload.error?.message || "DeepSeek 结构化求职记忆失败。");
     err.status = response.status;
     throw err;
   }
   const text = payload.choices?.[0]?.message?.content;
-  if (!text) throw new Error("DeepSeek 没有返回复盘 JSON。");
+  if (!text) throw new Error("DeepSeek 没有返回求职记忆 JSON。");
   const card = parseJsonText(text);
   return {
-    type: card.type || "interview_review",
-    title: card.title || `${input.company || "未知公司"} ${input.role || "未知岗位"}${input.round || "面试"}复盘`,
+    type: normalizeMemoryType(card.type || memoryType),
+    title: card.title || `${input.company || memoryTypeLabel}${input.role ? ` ${input.role}` : ""}求职记忆`,
     company: card.company || input.company || "",
     role: card.role || input.role || "",
     round: card.round || input.round || "未知",
@@ -596,6 +792,102 @@ ${rawText}`;
     tags: asArray(card.tags),
     reusableEvidence: asArray(card.reusable_evidence || card.reusableEvidence),
   };
+}
+
+async function structureResumeMemories(input) {
+  const apiKey = process.env.DEEPSEEK_API_KEY;
+  if (!apiKey) {
+    const err = new Error("缺少 DEEPSEEK_API_KEY，无法生成简历求职记忆。");
+    err.status = 401;
+    throw err;
+  }
+
+  const model = process.env.DEEPSEEK_MODEL || "deepseek-chat";
+  const resumeText = String(input.resumeText || "").slice(0, 60000);
+  const prompt = `你是求职记忆整理助手。请把用户简历拆成可进入 RAG 召回系统的求职记忆卡片。
+
+目标：
+- 让后续“问一问 AI”和“面试准备”能召回简历里的真实项目、实习经历、技能证据和回答素材。
+- 不要编造简历没有的经历、公司、数据、结果。
+- 优先保留能用于面试回答的项目经历和可复用证据。
+
+只输出严格 JSON，不要 Markdown。
+
+JSON 字段：
+{
+  "cards": [
+    {
+      "type": "project_experience|answer_material",
+      "title": "",
+      "company": "",
+      "role": "",
+      "round": "简历",
+      "result": "已沉淀",
+      "summary": "",
+      "questions": [
+        {
+          "question": "",
+          "intent": "",
+          "weakness": "",
+          "next_strategy": "",
+          "evidence_to_use": ""
+        }
+      ],
+      "tags": [],
+      "reusable_evidence": []
+    }
+  ]
+}
+
+要求：
+- 生成 3-8 条 cards。
+- 每个项目/实习经历尽量单独成卡，例如“B站 AI Coding 工作流落地”“Soul AI Agent 质检项目”。
+- 如果简历有可复用的自我介绍、技能组合或求职定位，可以生成 answer_material。
+- title 前缀不要写“简历导入”，保持自然项目名。
+- summary 控制在 160 字以内，写清这条经历能支撑什么能力。
+- questions 写这条经历适合回答的面试问题，例如项目深挖、指标、协作、RAG、Agent、数据分析、产品判断。
+- reusable_evidence 只写简历中能找到证据的事实。
+- tags 适合后续检索。
+
+简历文本：
+${resumeText}`;
+
+  const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: "user", content: prompt }],
+      response_format: { type: "json_object" },
+      temperature: 0,
+    }),
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const err = new Error(payload.error?.message || "DeepSeek 生成简历求职记忆失败。");
+    err.status = response.status;
+    throw err;
+  }
+  const text = payload.choices?.[0]?.message?.content;
+  if (!text) throw new Error("DeepSeek 没有返回简历求职记忆 JSON。");
+  const parsed = parseJsonText(text);
+  return asArray(parsed.cards).slice(0, 8).map((card, index) => ({
+    type: normalizeMemoryType(card.type || "project_experience"),
+    title: card.title || `简历经历 ${index + 1}`,
+    company: card.company || "",
+    role: card.role || "",
+    round: card.round || "简历",
+    result: card.result || "已沉淀",
+    rawText: resumeText,
+    summary: card.summary || "",
+    questions: asArray(card.questions),
+    tags: Array.from(new Set(["简历导入", ...asArray(card.tags)])),
+    reusableEvidence: asArray(card.reusable_evidence || card.reusableEvidence),
+  }));
 }
 
 async function saveMemoryCard(card, userId) {
@@ -669,14 +961,38 @@ async function searchMemoryCards(query, options = {}) {
   });
 }
 
+function mergeMemoryCards(...groups) {
+  const seen = new Set();
+  const merged = [];
+  groups.flat().forEach((item) => {
+    if (!item) return;
+    const key = item.id || `${item.title || ""}:${item.created_at || ""}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    merged.push(item);
+  });
+  return merged;
+}
+
 async function recallMemoryCards(query, options = {}) {
+  const limit = Math.max(1, Math.min(10, Number(options.limit) || 5));
+  const minUsefulCount = Math.min(3, limit);
+  let merged = [];
   try {
-    const memories = await searchMemoryCards(query, options);
-    if (asArray(memories).length) return memories;
+    const scopedMemories = await searchMemoryCards(query, { ...options, limit });
+    merged = asArray(scopedMemories);
+    if (options.round && merged.length < minUsefulCount) {
+      const broadMemories = await searchMemoryCards(query, { ...options, round: null, limit });
+      merged = mergeMemoryCards(merged, asArray(broadMemories));
+    }
+    if (merged.length >= minUsefulCount || (!options.round && merged.length)) {
+      return merged.slice(0, limit);
+    }
   } catch (error) {
     if (!/EMBEDDING_API_KEY|OPENAI_API_KEY|embedding/.test(error.message || "")) throw error;
   }
-  return listRecentMemoryCards(options);
+  const recentMemories = await listRecentMemoryCards({ ...options, round: null, limit });
+  return mergeMemoryCards(merged, asArray(recentMemories)).slice(0, limit);
 }
 
 async function prepareInterviewWithMemory(input) {
@@ -698,7 +1014,7 @@ async function prepareInterviewWithMemory(input) {
   const model = process.env.DEEPSEEK_MODEL || "deepseek-chat";
   const memoryText = asArray(memories).map((item, index) => (
     `#${index + 1} ${item.title}
-轮次：${item.round || "未知"}；岗位：${item.role || "未知"}；相似度：${Number(item.similarity || 0).toFixed(3)}
+类型：${getMemoryTypeLabel(item.type)}；轮次：${item.round || "未知"}；岗位：${item.role || "未知"}；相似度：${Number(item.similarity || 0).toFixed(3)}
 摘要：${item.summary || ""}
 问题：${JSON.stringify(item.questions_json || [])}
 标签：${JSON.stringify(item.tags_json || [])}`
@@ -767,7 +1083,7 @@ async function askCoachWithMemory(input) {
   const model = process.env.DEEPSEEK_MODEL || "deepseek-chat";
   const memoryText = asArray(memories).map((item, index) => (
     `#${index + 1} ${item.title}
-轮次：${item.round || "未知"}；岗位：${item.role || "未知"}；相似度：${item.similarity ? Number(item.similarity).toFixed(3) : "recent"}
+类型：${getMemoryTypeLabel(item.type)}；轮次：${item.round || "未知"}；岗位：${item.role || "未知"}；相似度：${item.similarity ? Number(item.similarity).toFixed(3) : "recent"}
 摘要：${item.summary || ""}
 问题：${JSON.stringify(item.questions_json || [])}
 标签：${JSON.stringify(item.tags_json || [])}`
@@ -1040,6 +1356,72 @@ async function handleApi(req, res, pathname) {
       return sendJson(res, 200, { page: latestPage });
     }
 
+    if (pathname.startsWith("/api/jobs/") && req.method === "GET") {
+      const jobId = decodeURIComponent(pathname.replace("/api/jobs/", ""));
+      const job = jobs.get(jobId);
+      if (!job || job.userId !== req.jobMemoryUserId) {
+        return sendJson(res, 404, { error: "任务不存在或已过期。" });
+      }
+      return sendJson(res, 200, { job: serializeJob(job) });
+    }
+
+    if (pathname === "/api/jobs/ocr-job" && req.method === "POST") {
+      const fields = parseMultipart(req, await readBody(req));
+      const file = fields.file;
+      if (!file?.buffer) return sendJson(res, 400, { error: "请上传岗位截图。" });
+      const job = createJob("ocr-job", req.jobMemoryUserId, "图片已上传，等待 OCR 识别");
+      updateJob(job, { progress: 15, stage: "图片已上传，正在排队识别" });
+      runJob(job, async () => {
+        updateJob(job, { progress: 25, stage: "正在识别截图文字" });
+        const text = await enqueueOcr(file.buffer, (message) => {
+          const ocrProgress = Math.round(25 + (message.progress || 0) * 65);
+          updateJob(job, {
+            progress: ocrProgress,
+            stage: message.status ? `OCR ${message.status}` : "正在识别截图文字",
+          });
+        });
+        updateJob(job, { progress: 95, stage: "正在整理识别结果" });
+        return { text };
+      });
+      return sendJson(res, 202, { jobId: job.id, job: serializeJob(job) });
+    }
+
+    if (pathname === "/api/jobs/analyze-match" && req.method === "POST") {
+      const payload = JSON.parse((await readBody(req, 2 * 1024 * 1024)).toString("utf8") || "{}");
+      if (!payload.jobText?.trim() || !payload.resumeText?.trim()) {
+        return sendJson(res, 400, { error: "请先准备岗位文本和简历文本。" });
+      }
+      const job = createJob("analyze-match", req.jobMemoryUserId, "已收到分析任务");
+      runJob(job, async () => {
+        updateJob(job, { progress: 10, stage: "正在准备 JD 和简历文本" });
+        await new Promise((resolve) => setTimeout(resolve, 120));
+        updateJob(job, { progress: 30, stage: "正在整理岗位要求和候选人经历" });
+        await new Promise((resolve) => setTimeout(resolve, 120));
+        updateJob(job, { progress: 65, stage: "AI 正在分析匹配度和面试风险" });
+        const analysis = await analyzeWithDeepSeek(String(payload.jobText).trim(), String(payload.resumeText).trim());
+        updateJob(job, { progress: 90, stage: "正在解析分析结果" });
+        return { analysis };
+      });
+      return sendJson(res, 202, { jobId: job.id, job: serializeJob(job) });
+    }
+
+    if (pathname === "/api/jobs/parse-link" && req.method === "POST") {
+      const payload = JSON.parse((await readBody(req, 1024 * 1024)).toString("utf8") || "{}");
+      if (!payload.url?.trim()) {
+        return sendJson(res, 400, { error: "请先粘贴岗位链接。" });
+      }
+      const job = createJob("parse-link", req.jobMemoryUserId, "已收到岗位链接");
+      runJob(job, async () => {
+        updateJob(job, { progress: 10, stage: "正在校验岗位链接" });
+        const result = await extractJobFromUrl(String(payload.url), (progress, stage) => {
+          updateJob(job, { progress, stage });
+        });
+        updateJob(job, { progress: 92, stage: "正在填充岗位文本" });
+        return result;
+      });
+      return sendJson(res, 202, { jobId: job.id, job: serializeJob(job) });
+    }
+
     if (pathname === "/api/ocr-job" && req.method === "POST") {
       const fields = parseMultipart(req, await readBody(req));
       const file = fields.file;
@@ -1071,6 +1453,25 @@ async function handleApi(req, res, pathname) {
       return sendJson(res, 200, { analysis });
     }
 
+    if (pathname === "/api/resume-memory" && req.method === "POST") {
+      const payload = JSON.parse((await readBody(req, 2 * 1024 * 1024)).toString("utf8") || "{}");
+      if (!payload.resumeText?.trim()) {
+        return sendJson(res, 400, { error: "请先保存或粘贴简历文本。" });
+      }
+      const structuredCards = await structureResumeMemories({
+        resumeText: String(payload.resumeText || ""),
+      });
+      if (!structuredCards.length) {
+        return sendJson(res, 400, { error: "没有从简历中提取到可沉淀的求职记忆。" });
+      }
+      const cards = [];
+      for (const structured of structuredCards) {
+        const card = await saveMemoryCard(structured, req.jobMemoryUserId);
+        if (card) cards.push(card);
+      }
+      return sendJson(res, 200, { cards, count: cards.length });
+    }
+
     if (pathname === "/api/memory-cards" && req.method === "GET") {
       const url = new URL(req.url || "/", `http://${req.headers.host}`);
       const cards = await listMemoryCards(url.searchParams.get("limit") || 30, req.jobMemoryUserId);
@@ -1080,9 +1481,10 @@ async function handleApi(req, res, pathname) {
     if (pathname === "/api/memory-cards" && req.method === "POST") {
       const payload = JSON.parse((await readBody(req, 2 * 1024 * 1024)).toString("utf8") || "{}");
       if (!payload.rawText?.trim()) {
-        return sendJson(res, 400, { error: "请先粘贴面试复盘文本。" });
+        return sendJson(res, 400, { error: "请先粘贴求职记忆内容。" });
       }
       const structured = await structureInterviewReview({
+        type: String(payload.type || "interview_review"),
         company: String(payload.company || ""),
         role: String(payload.role || ""),
         round: String(payload.round || ""),

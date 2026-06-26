@@ -138,6 +138,33 @@
   margin-bottom: 8rpx;
 }
 
+.memory-item {
+  border-top: 1rpx solid #ead7dd;
+  padding-top: 18rpx;
+  margin-top: 18rpx;
+}
+
+.memory-item:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+  margin-top: 0;
+}
+
+.memory-title {
+  color: #241923;
+  font-weight: 900;
+  line-height: 1.45;
+  margin-bottom: 6rpx;
+}
+
+.memory-meta {
+  font-size: 22rpx;
+}
+
+.memory-summary {
+  margin-top: 10rpx;
+}
+
 .prep-arrow {
   position: absolute;
   right: 18rpx;

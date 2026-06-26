@@ -1,42 +1,51 @@
 <view class="page">
-  <view class="page-title">新建面试复盘</view>
-  <view class="page-subtitle">记录面试细节，让 AI 帮你沉淀经验与策略。</view>
+  <view class="page-title">{{pageTitle}}</view>
+  <view class="page-subtitle">{{pageSubtitle}}</view>
 
   <view class="card">
-    <view class="field-label">面试公司</view>
-    <input class="input" value="{{company}}" bindinput="onCompany" placeholder="例如：字节跳动" />
-    <view class="field-label">面试岗位</view>
-    <input class="input" value="{{role}}" bindinput="onRole" placeholder="例如：高级产品经理" />
-
-    <view class="field-label">面试轮次</view>
+    <view class="field-label">记忆类型</view>
     <view class="chip-row">
-      <view class="chip {{round === item ? 'active' : ''}}" wx:for="{{rounds}}" wx:key="*this" bindtap="selectRound" data-value="{{item}}">{{item}}</view>
+      <view class="chip {{type === item.value ? 'active' : ''}}" wx:for="{{memoryTypes}}" wx:key="value" bindtap="selectType" data-value="{{item.value}}">{{item.label}}</view>
     </view>
+  </view>
 
-    <view class="field-label">当前结果</view>
-    <view class="chip-row">
-      <view class="chip {{result === item ? 'active' : ''}}" wx:for="{{results}}" wx:key="*this" bindtap="selectResult" data-value="{{item}}">{{item}}</view>
-    </view>
+  <view class="card">
+    <view class="field-label">公司/组织（可选）</view>
+    <input class="input" value="{{company}}" bindinput="onCompany" placeholder="例如：字节跳动 / B站 / Mock 面试" />
+    <view class="field-label">岗位/方向（可选）</view>
+    <input class="input" value="{{role}}" bindinput="onRole" placeholder="例如：AI 产品经理 / 增长产品 / 项目介绍" />
+
+    <block wx:if="{{type === 'interview_review'}}">
+      <view class="field-label">面试轮次</view>
+      <view class="chip-row">
+        <view class="chip {{round === item ? 'active' : ''}}" wx:for="{{rounds}}" wx:key="*this" bindtap="selectRound" data-value="{{item}}">{{item}}</view>
+      </view>
+
+      <view class="field-label">当前结果</view>
+      <view class="chip-row">
+        <view class="chip {{result === item ? 'active' : ''}}" wx:for="{{results}}" wx:key="*this" bindtap="selectResult" data-value="{{item}}">{{item}}</view>
+      </view>
+    </block>
   </view>
 
   <view class="field-label row-label">
-    <text>复盘内容</text>
-    <text class="muted">支持原始实录 · {{rawTextLength}} 字</text>
+    <text>{{contentLabel}}</text>
+    <text class="muted">{{contentMeta}} · {{rawTextLength}} 字</text>
   </view>
-  <textarea class="textarea review-text" maxlength="-1" value="{{rawText}}" bindinput="onRawText" placeholder="在此输入你的复盘草稿，支持粘贴较长的原始面试实录/ASR 转写。建议保留面试官问题、你的回答、卡住的地方和下次想补充的内容。" />
-  <view class="muted review-tip">如果实录特别长，优先粘贴高价值片段：项目深挖、业务理解、数据指标、AI/RAG/Agent、到岗时间等追问。</view>
+  <textarea class="textarea review-text" maxlength="-1" value="{{rawText}}" bindinput="onRawText" placeholder="{{contentPlaceholder}}" />
+  <view class="muted review-tip">{{contentTip}}</view>
 
   <view class="sticky-bottom">
-    <view class="primary-btn" bindtap="save">保存到个人记忆</view>
+    <view class="primary-btn" bindtap="save">保存到求职记忆</view>
   </view>
 
   <view class="section-title" wx:if="{{structured.title}}">实时结构化分析</view>
   <view class="card" wx:if="{{structured.title}}">
-    <view class="section-mini">问题记录</view>
+    <view class="section-mini">可复用问题</view>
     <view class="list-item" wx:for="{{structured.questions}}" wx:key="question">• {{item.question}}</view>
   </view>
   <view class="card" wx:if="{{structured.summary}}">
-    <view class="section-mini">考察意图与回答卡点</view>
+    <view class="section-mini">记忆摘要</view>
     <view class="muted">{{structured.summary}}</view>
   </view>
   <view class="card" wx:if="{{structured.tags.length}}">
