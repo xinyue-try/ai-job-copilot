@@ -27,7 +27,7 @@ AI Job Copilot 是一个面向个人求职流程的 AI 面试 Copilot。它把 J
   -> 基于历史 Job Memory 准备本轮面试
   -> STAR 回答提醒 / 练习计划 / 一分钟 Pitch
 
-面试中或面试前
+面试前
   -> 问一问 AI
   -> 结合当前 JD 和历史记忆生成回答思路
 
