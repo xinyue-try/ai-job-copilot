@@ -468,9 +468,6 @@ function inferGreetingContext(jobText, jobSummary = {}) {
   if (/AI|Agent|智能体|工作流|AIGC|大模型|LLM|Copilot|提示词|Prompt|自动化|RPA/i.test(text)) {
     return {
       role,
-      safePoint: "做过B站AI Coding工作流落地和Soul AI Agent质检项目",
-      matchedPoint: "做过B站AI Coding工作流落地，也参与过Soul AI Agent质检项目",
-      shortPoint: "有AI产品项目和SQL/Python经验",
       direction: "AI产品方向",
     };
   }
@@ -478,9 +475,6 @@ function inferGreetingContext(jobText, jobSummary = {}) {
   if (/数据|策略|增长|指标|分析|A\/B|AB实验|实验|SQL|Python|BI|商业分析|转化|留存|漏斗|归因/i.test(text)) {
     return {
       role,
-      safePoint: "做过需求设计、策略优化和数据分析，SQL/Python也能上手",
-      matchedPoint: "有需求设计、策略优化和数据分析经验，SQL/Python也能上手",
-      shortPoint: "有数据分析和SQL/Python经验",
       direction: "数据策略方向",
     };
   }
@@ -488,18 +482,12 @@ function inferGreetingContext(jobText, jobSummary = {}) {
   if (/用户研究|用研|市场调研|调研|竞品|访谈|问卷|洞察|画像/i.test(text)) {
     return {
       role,
-      safePoint: "做过用户调研、市场调研、数据分析和产品需求设计",
-      matchedPoint: "有用户调研、市场调研、数据分析和产品需求设计经验",
-      shortPoint: "有调研、产品需求设计和SQL/Python经验",
       direction: "用研/调研方向",
     };
   }
 
   return {
     role,
-    safePoint: "做过产品需求设计、产品实习和SQL/Python分析",
-    matchedPoint: "有B站/Soul产品实习、产品需求设计和SQL/Python分析经验",
-    shortPoint: "有B站/Soul产品实习和SQL/Python经验",
     direction: "产品方向",
   };
 }
@@ -507,9 +495,9 @@ function inferGreetingContext(jobText, jobSummary = {}) {
 function buildGreeting(jobText, jobSummary = {}) {
   const context = inferGreetingContext(jobText, jobSummary);
   return {
-    safe: `我一周内到岗，一周5天，可实习6个月，应用统计硕士，有B站/Soul产品实习和SQL/Python经验，${context.safePoint}。`,
-    matched: `我一周内到岗，一周5天，可实习6个月。上海对外经贸大学应用统计硕士，有B站/Soul产品实习和SQL/Python经验，${context.matchedPoint}，和这个${context.direction}匹配。`,
-    short: `一周内到岗，一周5天，可实习6个月，应用统计硕士，${context.shortPoint}，想了解下这个岗位。`,
+    safe: `我希望应聘${context.role}，实习和项目经历已整理在简历中，方便进一步沟通。`,
+    matched: `我希望应聘${context.role}，期待结合简历中的经历参与${context.direction}工作。`,
+    short: `希望应聘${context.role}，期待进一步沟通。`,
   };
 }
 
@@ -536,6 +524,16 @@ function removeUnsupportedAbClaims(greeting = {}, resumeText = "") {
   };
 }
 
+function normalizeGreeting(greeting, jobText, jobSummary, resumeText) {
+  const fallback = buildGreeting(jobText, jobSummary);
+  const source = greeting && typeof greeting === "object" ? greeting : {};
+  return removeUnsupportedAbClaims({
+    safe: source.safe || source.steady || fallback.safe,
+    matched: source.matched || source.direct || source.safe || fallback.matched,
+    short: source.short || source.warm || fallback.short,
+  }, resumeText);
+}
+
 function normalizeAnalysis(raw, jobText = "", resumeText = "") {
   const jobSummary = raw.job_summary || {};
   return {
@@ -545,7 +543,7 @@ function normalizeAnalysis(raw, jobText = "", resumeText = "") {
     interview_radar: asArray(raw.interview_radar || raw.interview_questions),
     missing_skills: asArray(raw.missing_skills),
     resume_rewrite_suggestions: asArray(raw.resume_rewrite_suggestions),
-    greeting: removeUnsupportedAbClaims(raw.greeting || buildGreeting(jobText, jobSummary), resumeText),
+    greeting: normalizeGreeting(raw.greeting, jobText, jobSummary, resumeText),
     recommended_action: raw.recommended_action || "待判断",
   };
 }
@@ -841,7 +839,7 @@ JSON 字段：
 
 要求：
 - 生成 3-8 条 cards。
-- 每个项目/实习经历尽量单独成卡，例如“B站 AI Coding 工作流落地”“Soul AI Agent 质检项目”。
+- 每个项目或实习经历尽量单独成卡；优先完整覆盖简历中最近新增的经历，不要只围绕较早的公司或项目生成。
 - 如果简历有可复用的自我介绍、技能组合或求职定位，可以生成 answer_material。
 - title 前缀不要写“简历导入”，保持自然项目名。
 - summary 控制在 160 字以内，写清这条经历能支撑什么能力。
@@ -1236,22 +1234,22 @@ JSON 字段：
 - total 必须等于 breakdown 五项 score 之和。
 - interview_radar 至少返回 5 个问题，高风险问题排前面。
 - greeting 只用于当前复制，不要暗示已经自动投递。
-- greeting 必须基于候选人的固定开场改写，并结合当前岗位 JD 添加 1 个岗位相关匹配点。
-- 固定开场信息必须尽量保留：一周内到岗、一周 5 天、可实习 6 个月、上海对外经贸大学应用统计硕士、B站/Soul 产品实习、SQL/Python。
-- 如果 JD 偏 AI 产品/Agent/工作流，优先提 B站 AI Coding 工作流落地、Soul AI Agent 质检项目。
-- 如果 JD 偏数据/策略/增长/产品分析，优先提需求设计、策略优化、数据分析、SQL/Python；只有简历明确写过 A/B 实验时才可以在 greeting/优势项中写“做过 A/B 实验”。
+- greeting 必须只根据本次传入的候选人简历和当前岗位 JD 生成，不得使用预设公司名、旧简历经历或固定项目。
+- 先识别简历中每段实习/项目的公司、时间、职责和成果，再选择最多 2 段写入 greeting：优先保留当前或时间最近的实习，再从其余经历中选择与 JD 最相关的一段。
+- 如果最新实习与 JD 有可说明的相关点，safe 和 matched 中必须优先出现该实习的公司名及一个真实职责或成果；较早经历仅在更匹配且字数允许时补充。
+- 到岗时间、每周出勤、可实习周期、学校、学历、技能和公司名，只有在本次简历中有明确证据时才能写入；简历未写的信息直接省略。
+- 如果 JD 偏 AI 产品/Agent/工作流，从当前简历的所有经历中选择最相关的 AI 产品、Agent、工作流或自动化证据，不要固定使用某家公司或项目。
+- 如果 JD 偏数据/策略/增长/产品分析，从当前简历中选择最相关的需求设计、策略优化、数据分析或 SQL/Python 证据；只有简历明确写过 A/B 实验时才可以在 greeting/优势项中写“做过 A/B 实验”。
 - 如果 JD 明确要求 A/B 实验但简历没有证据，请在 missing_skills、interview_radar 或 resume_rewrite_suggestions 中提醒用户准备“如何设计实验、指标口径、样本分组、结果归因”的回答思路。
 - 如果 JD 偏用户研究/市场调研，优先提用户调研、市场调研、数据分析、产品需求设计。
 - 每条 greeting 控制在 90 字以内，最多两句话，适合 BOSS 直聘直接发送。
 - 不要写“您好，我对贵公司岗位非常感兴趣”“本人”“贵司”“十分荣幸”“附件是我的简历”。
 - 不要编造简历没有的经历；不确定的岗位要求不要硬贴。
 - 对于简历没有证据的能力，放到 missing_skills 或 resume_rewrite_suggestions，不要放到 greeting 或匹配优势里。
-- safe：稳妥版，直接给固定开场和岗位匹配点，不要询问岗位是否还在招。
-- matched：匹配版，直接突出最相关岗位匹配点。
-- short：短句版，保留到岗/出勤/周期 + 1 个匹配点，尽量短。
-- 示例 safe：我一周内到岗，一周5天，可实习6个月，应用统计硕士，有B站/Soul产品实习和SQL、Python分析经验。
-- 示例 matched：我一周内到岗，一周5天，可实习6个月。目前在B站产品岗实习，做过AI Coding工作流落地，也参与过Soul AI Agent质检项目，和这个AI产品方向比较匹配。
-- 示例 short：一周内到岗，一周5天，可实习6个月，有B站/Soul产品实习和SQL、Python经验，想了解下这个岗位。
+- safe：稳妥版，突出最新实习和一个岗位匹配点，不要询问岗位是否还在招。
+- matched：匹配版，突出最新实习，并补充最多一个与 JD 最相关的经历或成果。
+- short：短句版，保留简历中确有证据的到岗/出勤/周期信息 + 最新或最匹配的一个经历，尽量短。
+- 三个版本都必须重新阅读本次简历后生成，不得照搬历史打招呼语；只参考“基本信息 + 最新经历 + JD 匹配点”的结构。
 - 如果无法识别公司/城市/薪资，填“未识别”。
 
 岗位 JD：
